@@ -4,7 +4,10 @@ Witch Doctor a simple dependencies injection
 
 import inspect
 from abc import ABC
-from typing import Any, Type, Callable
+from typing import Any, Type, TypeVar
+
+
+T = TypeVar("T")
 
 
 class WitchDoctor:
@@ -16,7 +19,7 @@ class WitchDoctor:
     __injection_map = {}
 
     @classmethod
-    def injection(cls, function: Callable):
+    def injection(cls, function: T) -> T:
         """
         WitchDoctor.injection is a function decorator that will match the
         function params signature and inject the  dependencies.\n
