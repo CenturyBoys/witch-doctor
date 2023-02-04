@@ -1,0 +1,41 @@
+repos:
+- repo: local
+  hooks:
+    - id: black
+      name: black
+      entry: black .
+      language: system
+      types: [ python ]
+    - id: pylint
+      name: pylint
+      entry: pylint witch_doctor
+      language: system
+      types: [python]
+      args:
+        [
+          "--ignore-paths",
+          "tests/",
+          "-rn", # Only display messages
+          "-sn", # Don't display the score
+        ]
+    - id: pytest
+      name: pytest
+      entry: pytest
+      language: system
+      types: [ python ]
+      pass_filenames: false
+      always_run: true
+    - id: mutatest
+      name: mutatest
+      entry: mutatest
+      language: system
+      types: [ python ]
+      args:
+        [
+          "-n",
+          "100",
+          "-s",
+          "witch_doctor",
+        ]
+      pass_filenames: false
+      always_run: true
