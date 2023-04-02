@@ -37,6 +37,7 @@ class WitchDoctor:
                     kwargs.update({param: class_ref()})
             return function(*args, **kwargs)
 
+        medicine.__wrapped__ = function
         return medicine
 
     @classmethod
