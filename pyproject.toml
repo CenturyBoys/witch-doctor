@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "witch-doctor"
-version = "0.1.2"
+version = "1.0.0"
 description = "Dependency injection for python"
 authors = ["Marco Sievers de Almeida Ximit Gaia <im.ximit@gmail.com>"]
 license = "Apache License 2.0"
