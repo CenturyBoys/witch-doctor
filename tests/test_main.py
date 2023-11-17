@@ -62,6 +62,12 @@ def test_register_invalid_injection_type():
     assert error.value.args == ("Invalid injection_type, must be one of InjectionType",)
 
 
+def test_load_not_created_container():
+    with pytest.raises(ValueError) as error:
+        WitchDoctor.load_container("lallaa")
+    assert error.value.args == ("Container lallaa not created. Go back and fix it!",)
+
+
 def test_injection_without_register():
     with pytest.raises(TypeError) as error:
 
@@ -76,18 +82,57 @@ def test_injection_without_register():
     )
 
 
+def test_validate_single__injection_map():
+    container_name = "t1"
+    assert container_name not in WitchDoctor._injection_map
+    container = WitchDoctor.container(container_name)
+    container(IStubFromABCClass, Stub1FromABCClass, InjectionType.FACTORY)
+    assert WitchDoctor._injection_map[container_name]
+    WitchDoctor.container(container_name)
+    assert WitchDoctor._injection_map[container_name]
+
+
 def test_injection():
+    container = WitchDoctor.container("t1")
+    container(IStubFromABCClass, Stub1FromABCClass, InjectionType.FACTORY)
+
     WitchDoctor.register(IStubFromABCClass, Stub1FromABCClass, InjectionType.FACTORY)
 
     @WitchDoctor.injection
     def func_t(a: int, b: int, c: IStubFromABCClass):
         return c.sum(a, b)
 
+    WitchDoctor.load_container()
+
     result_a1 = func_t(a=1, b=2)
     result_a2 = func_t(a=2, b=2)
 
     assert result_a1 == 3
     assert result_a2 == 4
+
+    WitchDoctor.load_container("t1")
+
+    result_a1 = func_t(a=1, b=2)
+    result_a2 = func_t(a=2, b=2)
+
+    assert result_a1 == 3
+    assert result_a2 == 4
+
+
+def test_inject_overwrite():
+    WitchDoctor.register(IStubFromABCClass, Stub1FromABCClass, InjectionType.FACTORY)
+
+    class Stub5FromABCClass(IStubFromABCClass):
+        def sum(self, a: int, b: int):
+            return a + b + 10
+
+    @WitchDoctor.injection
+    def func_t(a: int, b: int, c: IStubFromABCClass):
+        return c.sum(a, b)
+
+    result_a1 = func_t(a=1, b=2, c=Stub5FromABCClass())
+
+    assert result_a1 == 13
 
 
 def test_injection_on_class_method():
@@ -103,6 +148,8 @@ def test_container_injection():
     container(IStubFromABCClass, Stub4FromABCClass, InjectionType.SINGLETON, args=[20])
     container = WitchDoctor.container()
     container(IStubFromABCClass, Stub4FromABCClass, InjectionType.FACTORY, args=[10])
+
+    WitchDoctor.load_container()
 
     @WitchDoctor.injection
     def func_t(a: int, b: int, c: IStubFromABCClass):
@@ -121,3 +168,29 @@ def test_container_injection():
 
     assert result_a1 == 23
     assert result_a2 == 24
+
+
+def test_injection_type():
+    WitchDoctor.register(
+        IStubFromABCClass, Stub4FromABCClass, InjectionType.SINGLETON, args=[10]
+    )
+    WitchDoctor.load_container()
+
+    @WitchDoctor.injection
+    def func_t(c: IStubFromABCClass):
+        return c
+
+    instance_a1 = func_t()
+    instance_a2 = func_t()
+
+    assert id(instance_a2) == id(instance_a1)
+
+    WitchDoctor.register(
+        IStubFromABCClass, Stub4FromABCClass, InjectionType.FACTORY, args=[10]
+    )
+    WitchDoctor.load_container()
+
+    instance_a3 = func_t()
+    instance_a4 = func_t()
+
+    assert id(instance_a4) != id(instance_a3)
