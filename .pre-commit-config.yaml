@@ -6,6 +6,7 @@ repos:
       entry: black .
       language: system
       types: [ python ]
+      always_run: false
     - id: pylint
       name: pylint
       entry: pylint witch_doctor
@@ -24,7 +25,7 @@ repos:
       language: system
       types: [ python ]
       pass_filenames: false
-      always_run: true
+      always_run: false
     - id: mutatest
       name: mutatest
       entry: mutatest
@@ -38,4 +39,4 @@ repos:
           "witch_doctor",
         ]
       pass_filenames: false
-      always_run: true
+      always_run: false

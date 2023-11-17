@@ -86,27 +86,36 @@ from abc import ABC, abstractmethod
 
 from witch_doctor import WitchDoctor, InjectionType
 
+
+# Abstract class
 class IStubFromABCClass(ABC):
     @abstractmethod
     def sum(self, a: int, b: int):
         pass
+
     
+# Implementation
 class StubFromABCClass(IStubFromABCClass):
     def __init__(self, a: int):
         self.a = a
 
     def sum(self, a: int, b: int):
         return a + b + self.a
-    
-container = WitchDoctor.container("prod")
-container(IStubFromABCClass, StubFromABCClass, InjectionType.SINGLETON, args=[20])
+
+# Usage
+@WitchDoctor.injection
+def func_t(a: int, b: int, c: IStubFromABCClass):
+    return c.sum(a, b)
+
+# Containers
 container = WitchDoctor.container()
 container(IStubFromABCClass, StubFromABCClass, InjectionType.FACTORY, args=[10])
 
+container = WitchDoctor.container("prod")
+container(IStubFromABCClass, StubFromABCClass, InjectionType.SINGLETON, args=[20])
 
-@WitchDoctor.injection
-def func_t(a: int, b: int, c: IStubFromABCClass):
-    return c.sum(a, b), c
+# Loading and using
+WitchDoctor.load_container()
 
 result_a1 = func_t(a=1, b=2)
 result_a2 = func_t(a=2, b=2)
