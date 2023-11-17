@@ -1,7 +1,7 @@
 """
 Witch Doctor a simple dependencies injection
 """
-
+import functools
 import inspect
 from abc import ABC
 from enum import IntEnum
@@ -17,7 +17,7 @@ class InjectionType(IntEnum):
     """
 
     SINGLETON = 1
-    FACTORY = 2
+    FACTORY = 0
 
 
 T = TypeVar("T")
@@ -29,8 +29,9 @@ class WitchDoctor:
     decorator to inject the dependencies
     """
 
-    __injection_map = {"current": {}}
-    __singletons = {}
+    _injection_map = {"current": {}, "default": {}}
+    _singletons = {}
+    _signatures = {}
 
     @classmethod
     def container(cls, name: str = DEFAULT):
@@ -39,6 +40,8 @@ class WitchDoctor:
         :param name: Container name
         :return: Wrapper for register func
         """
+        if cls._injection_map.get(name) is None:
+            cls._injection_map.update({name: {}})
 
         def drugstore(
             interface: Type[ABC],
@@ -57,13 +60,15 @@ class WitchDoctor:
         return drugstore
 
     @classmethod
-    def load_container(cls, name: str = DEFAULT) -> None:
+    def load_container(cls, name: str = DEFAULT):
         """
         Will set the current container by the container name
         :param name:
         :return:
         """
-        cls.__injection_map["current"].update(cls.__injection_map[name])
+        if name not in cls._injection_map:
+            raise ValueError(f"Container {name} not created. Go back and fix it!")
+        cls._injection_map["current"].update(cls._injection_map[name])
 
     @classmethod
     def injection(cls, function: T) -> T:
@@ -73,36 +78,36 @@ class WitchDoctor:
         :type function: Callable
         """
 
+        params_signature = []
+        for param_name, signature in inspect.signature(function).parameters.items():
+            params_signature.append((param_name, signature.annotation))
+        cls._signatures[function] = tuple(params_signature)
+
+        @functools.wraps(function)
         def medicine(*args, **kwargs):
-            signature = inspect.signature(function).parameters
-            for param, signature in signature.items():
+            for param, param_type in cls._signatures[function]:
                 if param in kwargs:
                     continue
-                param_type = signature.annotation
-                if class_metadata := cls.__injection_map["current"].get(param_type):
-                    class_ref = class_metadata["cls"]
-                    class_args = class_metadata["args"]
-                    injection_type = class_metadata["injection_type"]
+                if class_metadata := cls._injection_map["current"].get(param_type):
                     instance = cls.__resolve_instance(
-                        class_ref, class_args, injection_type
+                        class_ref=class_metadata["cls"],
+                        args=class_metadata["args"],
+                        injection_type=class_metadata["injection_type"],
                     )
                     kwargs.update({param: instance})
             return function(*args, **kwargs)
 
-        medicine.__wrapped__ = function
         return medicine
 
     @classmethod
     def __resolve_instance(
         cls, class_ref: T, args: list, injection_type: InjectionType
     ) -> Type[T]:
-        if injection_type == InjectionType.SINGLETON:
-            if cls.__singletons.get(class_ref) is None:
-                cls.__singletons.update({class_ref: class_ref(*args)})
-            return cls.__singletons.get(class_ref)
-        if injection_type == InjectionType.FACTORY:
-            return class_ref(*args)
-        return None
+        if injection_type:
+            if cls._singletons.get(class_ref) is None:
+                cls._singletons.update({class_ref: class_ref(*args)})
+            return cls._singletons.get(class_ref)
+        return class_ref(*args)
 
     @classmethod
     def register(  # pylint: disable=R0913
@@ -131,9 +136,7 @@ class WitchDoctor:
             raise TypeError("Invalid injection_type, must be one of InjectionType")
         if args is None:
             args = []
-        if cls.__injection_map.get(container) is None:
-            cls.__injection_map.update({container: {}})
-        cls.__injection_map[container].update(
+        cls._injection_map[container].update(
             {
                 interface: {
                     "cls": class_ref,
@@ -142,14 +145,4 @@ class WitchDoctor:
                 }
             }
         )
-        if container == DEFAULT:
-            cls.__injection_map["current"].update(
-                {
-                    interface: {
-                        "cls": class_ref,
-                        "args": args,
-                        "injection_type": injection_type,
-                    }
-                }
-            )
         return cls

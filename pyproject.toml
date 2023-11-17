@@ -1,13 +1,12 @@
 [tool.poetry]
 name = "witch-doctor"
-version = "1.0.0"
+version = "1.1.0"
 description = "Dependency injection for python"
 authors = ["Marco Sievers de Almeida Ximit Gaia <im.ximit@gmail.com>"]
 license = "Apache License 2.0"
 readme = "README.md"
 packages = [
     { include = "witch_doctor"},
-    { include = "witch_doctor/**/*.py" },
 ]
 
 [tool.poetry.dependencies]
@@ -18,7 +17,16 @@ pytest = "^7.2.1"
 mutatest = "^3.1.0"
 pylint = "^2.15.10"
 pytest-cov = "^4.0.0"
+black = "^23.11.0"
+pre-commit = "^3.5.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.urls]
+homepage = "https://github.com/CenturyBoys/witch-doctor"
+documentation = "https://github.com/CenturyBoys/witch-doctor/blob/main/README.md"
+repository = "https://github.com/CenturyBoys/witch-doctor/tree/main"
+bugs = "https://github.com/CenturyBoys/witch-doctor/issues"
