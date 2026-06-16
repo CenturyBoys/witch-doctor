@@ -1,4 +1,5 @@
 import threading
+import time
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -215,3 +216,46 @@ class TestConcurrentContainerSwitch:
 
         assert len(results_a) == 10
         assert len(results_b) == 10
+
+
+class TestSingletonThreadSafety:
+    def test_singleton_constructed_exactly_once_under_concurrency(self):
+        """Constructor must run exactly once even when many threads race to create it."""
+        construction_count = 0
+        count_lock = threading.Lock()
+
+        class IExpensive(ABC):
+            @abstractmethod
+            def get_id(self) -> int:
+                pass
+
+        class ExpensiveService(IExpensive):
+            def __init__(self):
+                nonlocal construction_count
+                time.sleep(0.05)  # slow constructor — forces thread overlap
+                with count_lock:
+                    construction_count += 1
+                self._id = construction_count
+
+            def get_id(self) -> int:
+                return self._id
+
+        WitchDoctor.register(IExpensive, ExpensiveService, InjectionType.SINGLETON)
+        WitchDoctor.load_container()
+
+        num_threads = 20
+        instances = []
+        lock = threading.Lock()
+
+        def resolve():
+            instance = WitchDoctor.resolve(IExpensive)
+            with lock:
+                instances.append(instance)
+
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            futures = [executor.submit(resolve) for _ in range(num_threads)]
+            for f in as_completed(futures):
+                f.result()
+
+        assert construction_count == 1
+        assert len(set(id(i) for i in instances)) == 1

@@ -44,7 +44,7 @@ class WitchDoctor:
 
 ## Container
 
-You can register your injections using containers. The method `contianer` will provide a container register with the same signature as teh register without the container param. To use the created container you need to load it using `load_container`.
+You can register your injections using containers. The method `container` will provide a container register with the same signature as the register without the container param. To use the created container you need to load it using `load_container`.
 The base work load will set all registers in the DEFAULT group
 
 ```python
@@ -62,13 +62,13 @@ class StubFromABCClass(IStubFromABCClass):
         return a + b
 
 container = WitchDoctor.container("prod")
-WitchDoctor.register(IStubFromABCClass, StubFromABCClass, InjectionType.SINGLETON)   
+container(IStubFromABCClass, StubFromABCClass, InjectionType.SINGLETON)
 WitchDoctor.load_container("prod")
 
 ```
 ## Injection 
 
-Witch Doctor can be used as decorator. The function signature will ber check and if some values was not provide Witch Doctor will search on the registered interfaces to inject the dependencies.
+Witch Doctor can be used as a decorator. The function signature will be checked and if some values were not provided, Witch Doctor will search the registered interfaces to inject the dependencies.
 
 ```python
 class WitchDoctor:
@@ -77,7 +77,7 @@ class WitchDoctor:
         """
         WitchDoctor.injection is a function decorator that will match the
         function params signature and inject the  dependencies.
-        Will raise AttributeError is some args was pass throw\n
+        Will raise AttributeError if some args were passed through\n
 
         :type function: Callable
         """
